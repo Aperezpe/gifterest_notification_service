@@ -1,13 +1,24 @@
-const serviceAccount = require("./serviceAccountKey.json");
-const admin = require("firebase-admin");
+const serviceAccount = require("./serviceAccountKey.json"); // For local dev only
 
+const admin = require("firebase-admin");
 const express = require("express");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Initialazes firebase in the app
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+    projectId:
+      process.env.FIREBASE_PROJECT_ID.replace(/\\n/g, "\n") ||
+      serviceAccount.project_id,
+    private_key:
+      process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n") ||
+      serviceAccount.private_key,
+    client_email:
+      process.env.FIREBASE_CLIENT_EMAIL.replace(/\\n/g, "\n") ||
+      serviceAccount.client_email,
+  }),
   databaseURL: "https://important-dates-reminders.firebaseio.com",
 });
 const db = admin.firestore();
