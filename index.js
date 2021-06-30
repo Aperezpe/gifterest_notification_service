@@ -96,7 +96,7 @@ async function sendNotification(specialEvent, days) {
   }
 }
 
-app.get("/", async (req, res) => {
+app.get("/send_notifications", async (req, res) => {
   // Builds Object of Root Special Events from Firebase
   const specialEvents = {};
   const todayMonth = today.getMonth();
@@ -123,6 +123,10 @@ app.get("/", async (req, res) => {
   }
 
   res.send(`Notifications Sent!`);
+});
+
+app.get("/", (req, res) => {
+  res.send("API endpoint to send Gifterest notifications");
 });
 
 app.listen(port, () => {

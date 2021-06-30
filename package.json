@@ -1,8 +1,8 @@
 {
   "name": "notifications",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
+  "description": "Sends notifications to Gifterests users",
+  "main": "index.js",
   "dependencies": {
     "express": "^4.17.1",
     "firebase-admin": "^9.9.0"
