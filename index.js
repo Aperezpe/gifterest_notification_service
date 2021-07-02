@@ -93,41 +93,50 @@ async function sendNotification(specialEvent, days) {
       };
 
       admin.messaging().sendMulticast(message);
-
-      console.log(`Sent reminder to user: ${uid}`);
     } catch (e) {
-      console.log("Error getting user document: ", e);
+      throw e;
     }
   }
 }
 
 app.get("/send_notifications", async (req, res) => {
-  // Builds Object of Root Special Events from Firebase
-  const specialEvents = {};
-  const todayMonth = today.getMonth();
-  await db
-    .collection("root_special_events")
-    .where("month", ">=", todayMonth)
-    .where("month", "<=", todayMonth + 2)
-    .get()
-    .then((snapshot) =>
-      snapshot.forEach((event) => (specialEvents[event.id] = event.data()))
-    );
-
-  for (let event_id in specialEvents) {
-    // Sends notification if the event is Active AND has exactly 30,14,7, or 0 days remianing
-    if (
-      specialEvents[event_id].one_time_event == false ||
-      specialEvents[event_id].date >= today.getTime() * 1000 // To get milliseconds and match Unix Milliseconds Epoch format in DB
-    ) {
-      sendNotification(specialEvents[event_id], 30);
-      sendNotification(specialEvents[event_id], 14);
-      sendNotification(specialEvents[event_id], 7);
-      sendNotification(specialEvents[event_id], 0);
-    }
+  if (req.query.activation_key != process.env.HTTP_ACTIVATION_KEY) {
+    res
+      .status(403)
+      .send("The client does not have access rights to execute this request");
+    return;
   }
+  try {
+    // Builds Object of Root Special Events from Firebase
+    const specialEvents = {};
+    const todayMonth = today.getMonth();
+    await db
+      .collection("root_special_events")
+      .where("month", ">=", todayMonth)
+      .where("month", "<=", todayMonth + 2)
+      .get()
+      .then((snapshot) =>
+        snapshot.forEach((event) => (specialEvents[event.id] = event.data()))
+      );
 
-  res.send(`Notifications Sent!`);
+    for (let event_id in specialEvents) {
+      // Sends notification if the event is Active AND has exactly 30,14,7, or 0 days remianing
+      if (
+        specialEvents[event_id].one_time_event == false ||
+        specialEvents[event_id].date >= today.getTime() * 1000 // To get milliseconds and match Unix Milliseconds Epoch format in DB
+      ) {
+        await sendNotification(specialEvents[event_id], 30);
+        await sendNotification(specialEvents[event_id], 14);
+        await sendNotification(specialEvents[event_id], 7);
+        await sendNotification(specialEvents[event_id], 0);
+      }
+    }
+
+    res.status(200).send(`Notifications Successfully Sent!`);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("There was an error getting Firestore data");
+  }
 });
 
 app.get("/", (req, res) => {
