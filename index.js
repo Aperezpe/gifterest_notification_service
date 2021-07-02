@@ -1,4 +1,5 @@
-// const serviceAccount = require("./serviceAccountKey.json"); // For local dev only
+const serviceAccount = require("./serviceAccountKey.json"); // For local dev only
+const { performance } = require("perf_hooks");
 
 const admin = require("firebase-admin");
 const express = require("express");
@@ -8,11 +9,12 @@ const port = process.env.PORT || 3000;
 
 // Initialazes firebase in the app
 admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID.replace(/\\n/g, "\n"),
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL.replace(/\\n/g, "\n"),
-  }),
+  // credential: admin.credential.cert({
+  //   projectId: process.env.FIREBASE_PROJECT_ID.replace(/\\n/g, "\n"),
+  //   private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  //   client_email: process.env.FIREBASE_CLIENT_EMAIL.replace(/\\n/g, "\n"),
+  // }),
+  credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://important-dates-reminders.firebaseio.com",
 });
 const db = admin.firestore();
@@ -46,6 +48,7 @@ function createBody(specialEvent, days) {
 
 // Correct remaining days means if it remains 30,14,7 or 0 days for the event
 // to happen DISRIGARDING the year
+
 function hasCorrectRemainingDays(specialEvent, days) {
   const eventDate = new Date(specialEvent.date / 1000);
   eventDate.setHours(0, 0, 0, 0);
@@ -75,14 +78,22 @@ function hasCorrectRemainingDays(specialEvent, days) {
     );
   }
 }
-
+// Global variables of uid, user, and tokens to save Firestore reads
+var uid;
+var user;
+var tokens = [];
 // Sends notification if ramianing days match exactly 30,14,7, or 0
 async function sendNotification(specialEvent, days) {
   if (hasCorrectRemainingDays(specialEvent, days)) {
     try {
-      const uid = specialEvent.uid;
-      const user = await db.collection("users").doc(uid).get();
-      const tokens = user.data().tokens;
+      if (!user) {
+        uid = specialEvent.uid;
+        user = await db.collection("users").doc(uid).get();
+        tokens = user.data().tokens;
+      } else if (uid != specialEvent.uid) {
+        user = await db.collection("users").doc(uid).get();
+        tokens = user.data().tokens;
+      }
 
       const message = {
         notification: {
@@ -120,19 +131,25 @@ app.get("/send_notifications", async (req, res) => {
         snapshot.forEach((event) => (specialEvents[event.id] = event.data()))
       );
 
+    let count = 0;
+    // for (let i = 0; i < 500000; i++) {
     for (let event_id in specialEvents) {
       // Sends notification if the event is Active AND has exactly 30,14,7, or 0 days remianing
       if (
         specialEvents[event_id].one_time_event == false ||
         specialEvents[event_id].date >= today.getTime() * 1000 // To get milliseconds and match Unix Milliseconds Epoch format in DB
       ) {
+        count++;
         await sendNotification(specialEvents[event_id], 30);
         await sendNotification(specialEvents[event_id], 14);
         await sendNotification(specialEvents[event_id], 7);
         await sendNotification(specialEvents[event_id], 0);
       }
     }
-    console.log("Notifications successfully sent!!");
+
+    // }
+
+    console.log(`${count} Notifications successfully sent!!`);
     res.status(200).send(`Notifications Successfully Sent!!!!`);
   } catch (error) {
     console.log(error);
