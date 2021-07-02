@@ -101,6 +101,7 @@ async function sendNotification(specialEvent, days) {
 
 app.get("/send_notifications", async (req, res) => {
   if (req.query.activation_key != process.env.HTTP_ACTIVATION_KEY) {
+    console.log("The activation key was not correct!!");
     res
       .status(403)
       .send("The client does not have access rights to execute this request");
@@ -131,7 +132,7 @@ app.get("/send_notifications", async (req, res) => {
         await sendNotification(specialEvents[event_id], 0);
       }
     }
-
+    console.log("Notifications successfully sent!!");
     res.status(200).send(`Notifications Successfully Sent!!!!`);
   } catch (error) {
     console.log(error);
