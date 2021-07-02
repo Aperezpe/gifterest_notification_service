@@ -132,7 +132,7 @@ app.get("/send_notifications", async (req, res) => {
       }
     }
 
-    res.status(200).send(`Notifications Successfully Sent!`);
+    res.status(200).send(`Notifications Successfully Sent!!!!`);
   } catch (error) {
     console.log(error);
     res.status(500).send("There was an error getting Firestore data");
