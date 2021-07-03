@@ -110,6 +110,12 @@ async function sendNotification(specialEvent, days) {
 
 app.get("/send_notifications", async (req, res) => {
   if (req.query.activation_key != process.env.HTTP_ACTIVATION_KEY) {
+    if (req.query.activation_key == "wake_up") {
+      console.log("This function was called to wake up the Heroku Server");
+      res.status(200).send("Heroku Servers are awake!!");
+      return;
+    }
+
     console.log("The activation key was not correct!!");
     res
       .status(403)
