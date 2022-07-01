@@ -171,7 +171,7 @@ app.get("/send_notifications", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("API endpoint to send Gifterest notifications");
+  res.send("API endpoint to send Gifterest notifications. Working!");
 });
 
 app.listen(port, () => {
